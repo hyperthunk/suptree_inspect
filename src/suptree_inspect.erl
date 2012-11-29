@@ -21,8 +21,9 @@ print({badrpc, _}) ->
     io:format("rpc to node failed.~n");
 print([]) ->
     io:format("no process information available.~n");
-print([{Reg, CF, BTrace, Desc}|T]) ->
+print([{Pid, Reg, CF, BTrace, Desc}|T]) ->
     io:format("~n"),
+    io:format("pid: ~p~n", [Pid]),
     io:format("registered name: ~p~n", [strip(Reg)]),
     io:format("stacktrace: ~p~n", [strip(CF)]),
     io:format("-------------------------~n"),
@@ -40,7 +41,7 @@ strip([])                      -> none;
 strip(T)                       -> T.
 
 inspect(Name) ->
-   io:format(user, "inspecting rabbit supervision tree~n", []),
+   io:format(user, "inspecting ~s supervision tree~n", [Name]),
    {Acc, _} = gather(whereis(Name)),
    lists:reverse(Acc).
 
@@ -73,7 +74,7 @@ gather(Pid, {Acc, Seen}=S) when is_pid(Pid) ->
                         {[], MorePids}
                 end,
             Descendants = ShuttingDown ++ Links,
-            {[{Reg, CF, BTrace, Descendants}|Acc],
+            {[{Pid, Reg, CF, BTrace, Descendants}|Acc],
              track(Pid, MorePids2)};
         true ->
             S
