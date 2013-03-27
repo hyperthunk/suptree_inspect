@@ -17,8 +17,8 @@ main([Node, Sup]) ->
             erlang:halt(1)
     end.
 
-print({badrpc, _}) ->
-    io:format("rpc to node failed.~n");
+print({badrpc, Why}) ->
+    io:format("rpc to node failed: ~p~n", [Why]);
 print([]) ->
     io:format("no process information available.~n");
 print([{Pid, Reg, CF, BTrace, Desc}|T]) ->
@@ -55,6 +55,7 @@ gather(undefined, Acc) ->
 gather(Pid, {Acc, Seen}=S) when is_pid(Pid) ->
     case gb_trees:is_defined(Pid, Seen) of
         false ->
+          if node(Pid) =:= node() ->
             Reg = erlang:process_info(Pid, registered_name),
             CF = erlang:process_info(Pid, current_stacktrace),
             {_, BTrace} = erlang:process_info(Pid, backtrace),
@@ -76,6 +77,10 @@ gather(Pid, {Acc, Seen}=S) when is_pid(Pid) ->
             Descendants = ShuttingDown ++ Links,
             {[{Pid, Reg, CF, BTrace, Descendants}|Acc],
              track(Pid, MorePids2)};
+            true ->
+            {[{Pid, {remote_pid, node(Pid)}, [], [], []}|Acc],
+             track(Pid, Seen)}
+          end;
         true ->
             S
     end.
